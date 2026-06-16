@@ -6,6 +6,11 @@ const app = express();
 // Import routes
 const notificationRoutes = require('./routes/notificationRoutes');
 const simulatorRoutes = require('./routes/simulatorRoutes');
+const digestRoutes = require('./routes/digestRoutes'); 
+const ruleRoutes = require('./routes/ruleRoutes');  
+const userRoutes = require('./routes/userRoutes'); 
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
 // Middleware
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
@@ -29,10 +34,10 @@ app.get('/api/health', (req, res) => {
 // TODO: API routes will be added here in Phase 4
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/simulator', simulatorRoutes);
-// app.use('/api/digests', digestRoutes);
-// app.use('/api/rules', ruleRoutes);
-// app.use('/api/user', userRoutes);
-// app.use('/api/analytics', analyticsRoutes);
+app.use('/api/digests', digestRoutes);
+app.use('/api/rules', ruleRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use((req, res) => {
