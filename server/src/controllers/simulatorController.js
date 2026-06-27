@@ -6,22 +6,20 @@ const User = require('../models/User');
 
 exports.startSimulation = async (req, res, next) => {
   try {
-    const { speedMs = 5000 } = req.body || {}; // Default 1 notification every 5 seconds
+    const { speedMs = 5000 } = req.body || {};
     
-    // Fetch test user and rules
     const user = await User.findOne();
     if (!user) throw new Error("No test user found. Run seed script.");
     const rules = await Rule.find({ userId: user._id, isActive: true });
 
-    // Start simulator
     simulator.start(speedMs, async (rawNotification) => {
       rawNotification.userId = user._id;
       
-      // 1. Classify
-      const { priority, score } = await classificationEngine.classify(rawNotification, rules);
+      // Classify with behavioral learning (Layer 3)
+      const { priority, score, explanation } = await classificationEngine.classify(rawNotification, rules, user._id);
       
-      // 2. Deliver & Save
-      await deliveryManager.processAndDeliver(rawNotification, priority, score);
+      // Deliver & Save
+      const saved = await deliveryManager.processAndDeliver(rawNotification, priority, score, explanation);
     });
 
     res.json({ message: `Simulation started at ${speedMs}ms interval` });
@@ -41,8 +39,8 @@ exports.sendOne = async (req, res, next) => {
     const rules = await Rule.find({ userId: user._id, isActive: true });
     
     const rawNotification = { ...simulator.generateOne(), userId: user._id };
-    const { priority, score } = await classificationEngine.classify(rawNotification, rules);
-    const saved = await deliveryManager.processAndDeliver(rawNotification, priority, score);
+    const { priority, score, explanation } = await classificationEngine.classify(rawNotification, rules, user._id);
+    const saved = await deliveryManager.processAndDeliver(rawNotification, priority, score, explanation);
     
     res.json(saved);
   } catch (error) {

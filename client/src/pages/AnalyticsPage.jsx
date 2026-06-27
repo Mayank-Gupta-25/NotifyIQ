@@ -49,7 +49,7 @@ const AnalyticsPage = () => {
       <div className="feed-container" style={{ maxWidth: '900px' }}>
 
         {/* Stats Cards Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
+        <div className="stats-grid-4">
           <div className="glass animate-fade-in-up" style={{ padding: 'var(--space-4)', borderRadius: 'var(--border-radius-md)', textAlign: 'center', borderTop: '3px solid var(--accent-primary)' }}>
             <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--accent-primary)' }}>{summary.total}</div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>Total Notifications</div>
@@ -69,7 +69,7 @@ const AnalyticsPage = () => {
         </div>
 
         {/* Priority Breakdown (Pie) + App Breakdown (Bar) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+        <div className="charts-grid-2">
           {/* Pie Chart */}
           <div className="glass animate-fade-in-up" style={{ padding: 'var(--space-5)', borderRadius: 'var(--border-radius-lg)' }}>
             <h4 style={{ marginBottom: 'var(--space-4)' }}>Priority Breakdown</h4>

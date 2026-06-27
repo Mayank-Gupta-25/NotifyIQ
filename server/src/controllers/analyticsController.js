@@ -1,5 +1,7 @@
 const Notification = require('../models/Notification');
 const BehaviorLog = require('../models/BehaviorLog');
+const behaviorTracker = require('../services/behaviorTracker');
+const User = require('../models/User');
 
 exports.getSummary = async (req, res, next) => {
   try {
@@ -73,6 +75,17 @@ exports.getTrends = async (req, res, next) => {
     });
 
     res.json(hours);
+  } catch (error) {
+    next(error);
+  }
+};
+exports.getBehaviorReport = async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const behaviorTracker = require('../services/behaviorTracker');
+    const user = await User.findOne();
+    const report = await behaviorTracker.getFullReport(user._id);
+    res.json(report);
   } catch (error) {
     next(error);
   }

@@ -82,7 +82,7 @@ const SimulatorPage = () => {
       <div className="feed-container" style={{ maxWidth: '800px' }}>
 
         {/* Live Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <div className="stats-grid-5">
           {[
             { label: 'Total', value: stats.total, color: 'var(--accent-primary)' },
             { label: 'Critical', value: stats.critical, color: 'var(--priority-critical)' },

@@ -1,70 +1,3 @@
-// import { formatDistanceToNow } from 'date-fns';
-// import { PRIORITY_CONFIG } from '../../../../shared/constants';
-
-// const NotificationCard = ({ notification }) => {
-//   const config = PRIORITY_CONFIG[notification.priority] || PRIORITY_CONFIG.low;
-//   const timeAgo = formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true });
-
-//   return (
-//     <div 
-//       className="glass animate-slide-in-right"
-//       style={{
-//         padding: '1rem',
-//         marginBottom: '1rem',
-//         borderRadius: 'var(--border-radius-md)',
-//         borderLeft: `4px solid ${config.color}`,
-//         position: 'relative',
-//         overflow: 'hidden'
-//       }}
-//     >
-//       {/* Background glow for critical/important */}
-//       {['critical', 'important'].includes(notification.priority) && (
-//         <div style={{
-//           position: 'absolute',
-//           top: 0, left: 0, right: 0, bottom: 0,
-//           backgroundColor: config.color,
-//           opacity: 0.05,
-//           zIndex: 0
-//         }} />
-//       )}
-
-//       <div style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1 }}>
-//         <div style={{ fontSize: '1.5rem' }}>{notification.icon || '🔔'}</div>
-        
-//         <div style={{ flex: 1 }}>
-//           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-//             <h4 style={{ margin: '0 0 0.25rem 0' }}>{notification.title}</h4>
-//             <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-//               {timeAgo}
-//             </span>
-//           </div>
-          
-//           <p style={{ margin: '0 0 0.5rem 0', fontSize: 'var(--font-size-sm)' }}>
-//             {notification.body}
-//           </p>
-
-//           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//             <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-//               {notification.sourceApp}
-//             </span>
-//             <span style={{ 
-//               fontSize: 'var(--font-size-xs)', 
-//               padding: '2px 8px', 
-//               borderRadius: '12px',
-//               backgroundColor: `rgba(255,255,255,0.1)`,
-//               color: config.color,
-//               fontWeight: '600'
-//             }}>
-//               {config.icon} {config.label}
-//             </span>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default NotificationCard;
 import { formatDistanceToNow } from 'date-fns';
 import { PRIORITY_CONFIG } from '../../../../shared/constants';
 
@@ -101,10 +34,31 @@ const NotificationCard = ({ notification, onDismiss, onArchive }) => {
 
           <div className="card-footer">
             <span className="card-source">{notification.sourceApp}</span>
-            <span className="card-priority-badge" style={{ color: config.color }}>
-              {config.icon} {config.label}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              {/* Score indicator */}
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                Score: {notification.score}
+              </span>
+              <span className="card-priority-badge" style={{ color: config.color }}>
+                {config.icon} {config.label}
+              </span>
+            </div>
           </div>
+
+          {/* Why this priority? — shown if explanation exists */}
+          {notification.explanation && (
+            <div style={{
+              marginTop: 'var(--space-2)',
+              padding: 'var(--space-1) var(--space-2)',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--accent-secondary)',
+              background: 'rgba(0, 210, 255, 0.08)',
+              borderRadius: 'var(--border-radius-sm)',
+              borderLeft: '2px solid var(--accent-secondary)'
+            }}>
+              🧠 {notification.explanation}
+            </div>
+          )}
 
           {/* Action buttons - appear on hover */}
           <div className="card-actions">
