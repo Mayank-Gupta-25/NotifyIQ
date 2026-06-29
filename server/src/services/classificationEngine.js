@@ -1,6 +1,6 @@
 const { PRIORITY, PRIORITY_RANGES, CATEGORY } = require('../../../shared/constants');
 const KEYWORDS = require('../utils/keywords');
-const BehaviorLog = require('../models/BehaviorLog');
+
 const { ACTION_WEIGHTS } = require('../../../shared/constants');
 
 class ClassificationEngine {
@@ -53,13 +53,17 @@ class ClassificationEngine {
   }
 
   checkStaticRules(notification, rules) {
-    const appRule = rules.find(r => r.type === 'app' && r.value.toLowerCase() === notification.sourceApp.toLowerCase() && r.isActive);
+    const sourceApp = notification.sourceApp || '';
+    const appRule = rules.find(r => r.type === 'app' && r.value.toLowerCase() === sourceApp.toLowerCase() && r.isActive);
     if (appRule) return appRule.priority;
 
     const catRule = rules.find(r => r.type === 'category' && r.value === notification.category && r.isActive);
     if (catRule) return catRule.priority;
 
-    const textToSearch = `${notification.title} ${notification.body}`.toLowerCase();
+    const title = notification.title || '';
+    const body = notification.body || '';
+    const textToSearch = `${title} ${body}`.toLowerCase();
+    
     const keywordRule = rules.find(r => r.type === 'keyword' && textToSearch.includes(r.value.toLowerCase()) && r.isActive);
     if (keywordRule) return keywordRule.priority;
 
@@ -67,7 +71,9 @@ class ClassificationEngine {
   }
 
   analyzeContent(notification) {
-    const textToSearch = `${notification.title} ${notification.body}`.toLowerCase();
+    const title = notification.title || '';
+    const body = notification.body || '';
+    const textToSearch = `${title} ${body}`.toLowerCase();
     
     for (const priority of [PRIORITY.CRITICAL, PRIORITY.IMPORTANT, PRIORITY.NOISE, PRIORITY.LOW]) {
       const keywordsList = KEYWORDS[priority];
@@ -84,23 +90,25 @@ class ClassificationEngine {
     return { ...fallback, reason: `Category "${notification.category}" → ${fallback.priority}` };
   }
 
-  /**
-   * Layer 3: Adjust score based on user's past behavior with this app/category.
-   * If engagement < 20 → user doesn't care → downgrade (-15 points)
-   * If engagement > 70 → user cares a lot → upgrade (+15 points)
-   */
   async applyBehavioralAdjustment(userId, sourceApp, category, currentScore) {
-    const logs = await BehaviorLog.find({ userId, sourceApp }).limit(20).sort({ actionTimestamp: -1 });
+    // Phase 12 Update: Use SQLite repo instead of MongoDB Mongoose
+    const BehaviorRepo = require('../database/behaviorRepo');
+    const stats = BehaviorRepo.getStatsByApp(userId, sourceApp);
     
-    if (logs.length < 3) {
+    let totalLogs = 0;
+    let weightedSum = 0;
+    
+    stats.forEach(stat => {
+      totalLogs += stat.count;
+      weightedSum += (ACTION_WEIGHTS[stat.action] || 0) * stat.count;
+    });
+
+    if (totalLogs < 3) {
       return { adjusted: false }; // Not enough data yet
     }
-
-    let weightedSum = 0;
-    logs.forEach(log => { weightedSum += ACTION_WEIGHTS[log.action] || 0; });
     
-    const maxPossible = logs.length * 3;
-    const minPossible = logs.length * -2;
+    const maxPossible = totalLogs * 3;
+    const minPossible = totalLogs * -2;
     const range = maxPossible - minPossible;
     const engagementScore = range > 0
       ? Math.round(((weightedSum - minPossible) / range) * 100)

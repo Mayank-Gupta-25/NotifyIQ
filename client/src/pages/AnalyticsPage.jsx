@@ -14,12 +14,12 @@ const AnalyticsPage = () => {
   const [trends, setTrends] = useState([]);
 
   const fetchData = async () => {
-    const [sumRes, trendRes] = await Promise.all([
-      fetch('/api/analytics/summary'),
-      fetch('/api/analytics/trends')
-    ]);
-    setSummary(await sumRes.json());
-    setTrends(await trendRes.json());
+    if (window.electronAPI) {
+      const summaryData = await window.electronAPI.getAnalyticsSummary();
+      const trendsData = await window.electronAPI.getAnalyticsTrends();
+      setSummary(summaryData);
+      setTrends(trendsData);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

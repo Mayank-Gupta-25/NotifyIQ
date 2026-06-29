@@ -1,17 +1,15 @@
-const Notification = require('../models/Notification');
-const Digest = require('../models/Digest');
-const User = require('../models/User');
+const NotificationRepo = require('../database/notificationRepo');
+const DigestRepo = require('../database/digestRepo');
 const { PRIORITY, NOTIFICATION_STATUS } = require('../../../shared/constants');
 
 class DigestGenerator {
-  async generateDailyDigest(userId) {
+  async generateDailyDigest(userId = 'user_001') {
     const now = new Date();
     
     // Fetch all unread "Low" priority notifications
-    const notifications = await Notification.find({
-      userId,
-      priority: PRIORITY.LOW,
-      status: NOTIFICATION_STATUS.UNREAD
+    const notifications = NotificationRepo.getAll({
+      status: NOTIFICATION_STATUS.UNREAD,
+      priority: PRIORITY.LOW
     });
 
     if (notifications.length === 0) {
@@ -52,27 +50,25 @@ class DigestGenerator {
     });
 
     // 4. Create and save the Digest
-    const digest = new Digest({
+    const digest = DigestRepo.create({
       userId,
       period: {
-        from: new Date(now.getTime() - 24 * 60 * 60 * 1000), // 24 hours ago
-        to: now
+        from: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
+        to: now.toISOString()
       },
       summary: {
         totalNotifications: notifications.length,
-        byCategory: Object.fromEntries(categoryMap), // Safe for MongoDB Map
+        byCategory: Object.fromEntries(categoryMap),
         topApps,
         suppressedCount: 0 // Placeholder for Noise notifications
       },
       sections
     });
 
-    await digest.save();
-
     // 5. Mark notifications as archived so they don't appear in tomorrow's digest
-    await Notification.updateMany(
-      { _id: { $in: notifications.map(n => n._id) } },
-      { $set: { status: NOTIFICATION_STATUS.ARCHIVED } }
+    NotificationRepo.updateManyStatus(
+      notifications.map(n => n._id),
+      NOTIFICATION_STATUS.ARCHIVED
     );
 
     console.log(`🗞️ Daily Digest Generated! Bundled ${notifications.length} notifications.`);

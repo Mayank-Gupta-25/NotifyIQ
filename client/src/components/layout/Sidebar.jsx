@@ -1,8 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { useSocket } from '../../context/SocketContext';
 
 const Sidebar = () => {
-  const { isConnected } = useSocket();
 
   return (
     <aside className="sidebar">
@@ -45,8 +43,8 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="sidebar-status">
-          <span className={`status-dot ${isConnected ? 'online' : 'offline'}`} />
-          {isConnected ? 'System Live' : 'Disconnected'}
+          <span className="status-dot online" />
+          Local System Live
         </div>
       </div>
     </aside>

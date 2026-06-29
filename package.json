@@ -1,17 +1,25 @@
 {
   "name": "notification_system",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev"
+    "dev:server": "echo 'Backend runs in Electron now'",
+    "electron:dev": "electron ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3",
+    "electron-store": "^8.2.0",
+    "jimp": "^0.22.10"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
   }
 }

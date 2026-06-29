@@ -1,36 +1,28 @@
-const Notification = require('../models/Notification');
-const { getIO } = require('../config/socket');
-const { PRIORITY, SOCKET_EVENTS } = require('../../../shared/constants');
+const { PRIORITY } = require('../../../shared/constants');
+const NotificationRepo = require('../database/notificationRepo');
+const { BrowserWindow } = require('electron');
 
 class DeliveryManager {
-  async processAndDeliver(notificationData, finalPriority, score, explanation = '') {
-    // 1. Save to Database
-    const notification = new Notification({
-      ...notificationData,
-      priority: finalPriority,
-      score: score
-    });
-    await notification.save();
+  static deliver(notification) {
+    // 1. Save to SQLite database
+    const savedNotification = NotificationRepo.create(notification);
 
-    // Attach explanation (not persisted, but sent via socket)
-    const notifObj = notification.toObject();
-    notifObj.explanation = explanation;
-
-    // 2. Real-time Delivery via WebSocket
-    if (finalPriority === PRIORITY.CRITICAL || finalPriority === PRIORITY.IMPORTANT) {
-      try {
-        const io = getIO();
-        io.emit(SOCKET_EVENTS.NOTIFICATION_NEW, notifObj);
-        console.log(`🚀 Delivered real-time: [${finalPriority.toUpperCase()}] ${notification.title}`);
-      } catch (err) {
-        console.warn('⚠️ Could not deliver via WebSocket (client might not be connected yet)');
-      }
+    // 2. Decide how to deliver based on priority
+    if (savedNotification.priority === PRIORITY.CRITICAL || savedNotification.priority === PRIORITY.IMPORTANT) {
+      this.pushRealTime(savedNotification);
     } else {
-      console.log(`📦 Queued for later: [${finalPriority.toUpperCase()}] ${notification.title}`);
+      console.log(`[DeliveryManager] ${savedNotification.priority} notification queued for digest.`);
     }
+  }
 
-    return notifObj;
+  static pushRealTime(notification) {
+    // Find our main Electron window
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length > 0) {
+      // Send IPC message to the React frontend
+      windows[0].webContents.send('notifications:new', notification);
+    }
   }
 }
 
-module.exports = new DeliveryManager();
+module.exports = DeliveryManager;

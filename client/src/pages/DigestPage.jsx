@@ -7,23 +7,26 @@ const DigestPage = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchDigests = async () => {
-    const res = await fetch('/api/digests');
-    const data = await res.json();
-    setDigests(data);
+    if (window.electronAPI) {
+      const latest = await window.electronAPI.getLatestDigest();
+      if (latest) setDigests([latest]);
+      else setDigests([]);
+    }
   };
 
   useEffect(() => { fetchDigests(); }, []);
 
   const generateNow = async () => {
     setLoading(true);
-    const res = await fetch('/api/digests/generate', { method: 'POST' });
-    const data = await res.json();
-    setLoading(false);
-    if (data._id) {
-      fetchDigests(); // Refresh list
-    } else {
-      alert(data.message || 'No new notifications to digest.');
+    if (window.electronAPI) {
+      const result = await window.electronAPI.generateDigest();
+      if (result) {
+        fetchDigests();
+      } else {
+        alert('No new low-priority notifications to bundle.');
+      }
     }
+    setLoading(false);
   };
 
   return (

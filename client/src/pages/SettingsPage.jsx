@@ -12,31 +12,39 @@ const FOCUS_OPTIONS = [
 const SettingsPage = () => {
   const [user, setUser] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [launchOnStartup, setLaunchOnStartup] = useState(false);
 
   const fetchUser = async () => {
-    const res = await fetch('/api/user/preferences');
-    const data = await res.json();
-    setUser(data);
+    if (window.electronAPI) {
+      const data = await window.electronAPI.getUserPreferences();
+      const startupVal = await window.electronAPI.getLaunchOnStartup();
+      setLaunchOnStartup(startupVal);
+      // The API returns the whole row for the user
+      setUser({
+        username: data.username,
+        email: data.email,
+        preferences: {
+          focusMode: data.focus_mode,
+          digestTime: data.digest_time
+        }
+      });
+    }
   };
 
   useEffect(() => { fetchUser(); }, []);
 
   const handleFocusChange = async (mode) => {
-    await fetch('/api/user/focus-mode', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ focusMode: mode })
-    });
-    fetchUser();
+    if (window.electronAPI) {
+      await window.electronAPI.updateUserPreferences({ focusMode: mode });
+      fetchUser();
+    }
   };
 
   const handleDigestTimeChange = async (time) => {
-    await fetch('/api/user/preferences', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ digestTime: time })
-    });
-    fetchUser();
+    if (window.electronAPI) {
+      await window.electronAPI.updateUserPreferences({ digestTime: time });
+      fetchUser();
+    }
   };
 
   const toggleTheme = () => {
@@ -44,6 +52,14 @@ const SettingsPage = () => {
     setTheme(next);
     localStorage.setItem('theme', next);
     document.documentElement.setAttribute('data-theme', next);
+  };
+
+  const handleStartupToggle = async (e) => {
+    const isChecked = e.target.checked;
+    setLaunchOnStartup(isChecked);
+    if (window.electronAPI) {
+      await window.electronAPI.setLaunchOnStartup(isChecked);
+    }
   };
 
   return (
@@ -106,6 +122,38 @@ const SettingsPage = () => {
             <input type="time" value={user?.preferences?.digestTime || '08:00'}
               onChange={e => handleDigestTimeChange(e.target.value)}
               style={{ padding: 'var(--space-2) var(--space-3)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-sm)', fontSize: 'var(--font-size-sm)' }} />
+          </div>
+        </div>
+
+        {/* System Settings */}
+        <div className="glass animate-fade-in-up" style={{ padding: 'var(--space-5)', borderRadius: 'var(--border-radius-lg)', marginBottom: 'var(--space-4)' }}>
+          <h3 style={{ marginBottom: 'var(--space-4)' }}>⚙️ System</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)' }}>
+                Launch on Startup
+              </p>
+              <p style={{ margin: 0, fontSize: 'var(--font-size-xs)' }}>Start NotifyIQ silently in the system tray when Windows boots.</p>
+            </div>
+            <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
+              <input 
+                type="checkbox" 
+                checked={launchOnStartup} 
+                onChange={handleStartupToggle} 
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span className="slider round" style={{
+                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: launchOnStartup ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                transition: '.4s', borderRadius: '34px'
+              }}>
+                <span style={{
+                  position: 'absolute', content: '""', height: '16px', width: '16px', left: '4px', bottom: '4px',
+                  backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                  transform: launchOnStartup ? 'translateX(16px)' : 'translateX(0)'
+                }}></span>
+              </span>
+            </label>
           </div>
         </div>
 

@@ -1,0 +1,24 @@
+Make the following specific changes to the `implementation_plan.md`:
+
+1. **Architecture & IPC (Phase 12):** - Remove the embedded Express server running on a randomized `localhost` port. 
+   - Rewrite the architecture to use standard Electron `contextBridge` and IPC channels for all communication between the React frontend and the Node main process.
+
+2. **Database (Global):** - Completely remove MongoDB Atlas. 
+   - Replace it with `better-sqlite3` for a fully local, offline-first, and privacy-respecting database. Update Phase 12 and the architecture diagrams to reflect this.
+
+3. **WinRT Notification Listener (Phase 14):** - Discard the use of unmaintained NPM packages like `@aspect/winrt` or `node-ffi-napi`. 
+   - Update the plan to build a custom C++ native module using `node-addon-api` and Node-API (N-API). 
+   - Specifically mention using a `napi_threadsafe_function` to safely pass background Windows OS `UserNotificationListener` events back to the single-threaded Node V8 engine. Build tool should be `node-gyp`.
+
+4. **Focus Assist Fallback (Phase 15):** - Add a fallback mechanism for Focus Assist suppression. If the app lacks OS permissions or fails to toggle Windows Focus Assist, it should gracefully fall back to an "additive mode" (recording and scoring notifications silently without suppressing the native Windows popups).
+
+5. **Machine Learning Layer (Phase 16):** - Completely remove the Python microservice option. Python bloats the installer too much for distribution. 
+   - Make TensorFlow.js (running natively in Node) the sole, definitive path for the ML implementation.
+
+6. **Packaging & Distribution (Phase 17):** - Specify that the app will be distributed via GitHub.
+   - Mention two distribution paths: 
+     a) Open-source (users clone and build locally via `node-gyp` and `npm run build` to bypass SmartScreen). 
+     b) GitHub Releases (providing the packaged `.exe`). 
+   - Add a mandatory requirement to include a disclaimer in the README regarding the Windows SmartScreen "unrecognized app" warning for the unsigned `.exe`.
+
+Please rewrite the relevant sections, adjust the mermaid diagrams, and update the open questions to reflect that these decisions have been finalized.
