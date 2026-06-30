@@ -13,12 +13,17 @@ const SettingsPage = () => {
   const [user, setUser] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
+  const [listenerAvailable, setListenerAvailable] = useState(false);
+  const [listenerEnabled, setListenerEnabled] = useState(false);
 
   const fetchUser = async () => {
     if (window.electronAPI) {
       const data = await window.electronAPI.getUserPreferences();
       const startupVal = await window.electronAPI.getLaunchOnStartup();
       setLaunchOnStartup(startupVal);
+      const listenerStatus = await window.electronAPI.getListenerStatus();
+      setListenerAvailable(listenerStatus.available);
+      setListenerEnabled(listenerStatus.enabled);
       // The API returns the whole row for the user
       setUser({
         username: data.username,
@@ -59,6 +64,17 @@ const SettingsPage = () => {
     setLaunchOnStartup(isChecked);
     if (window.electronAPI) {
       await window.electronAPI.setLaunchOnStartup(isChecked);
+    }
+  };
+
+  const handleListenerToggle = async (e) => {
+    const isChecked = e.target.checked;
+    setListenerEnabled(isChecked);
+    if (window.electronAPI) {
+      const success = await window.electronAPI.setListenerEnabled(isChecked);
+      if (success && isChecked) {
+        alert("Real Notifications enabled!\n\nIf this is your first time, Windows will show a permission prompt asking to 'Allow this app to access notifications'. Please click Allow.");
+      }
     }
   };
 
@@ -155,6 +171,48 @@ const SettingsPage = () => {
               </span>
             </label>
           </div>
+        </div>
+
+        {/* Windows Integration (Phase 15) */}
+        <div className="glass animate-fade-in-up" style={{ padding: 'var(--space-5)', borderRadius: 'var(--border-radius-lg)', marginBottom: 'var(--space-4)' }}>
+          <h3 style={{ marginBottom: 'var(--space-4)' }}>💻 Windows Integration</h3>
+          
+          {!listenerAvailable ? (
+            <div style={{ background: 'rgba(255, 165, 2, 0.1)', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #ffa502' }}>
+              <strong>Native Addon Not Available</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#94a3b8' }}>
+                The C++ listener was not compiled or failed to load. Run <code>npm run native:build</code>.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)' }}>
+                  Capture Real Notifications
+                </p>
+                <p style={{ margin: 0, fontSize: 'var(--font-size-xs)' }}>Intercept Windows notifications and route them through Smart Triage.</p>
+              </div>
+              <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={listenerEnabled} 
+                  onChange={handleListenerToggle} 
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span className="slider round" style={{
+                  position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: listenerEnabled ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  transition: '.4s', borderRadius: '34px'
+                }}>
+                  <span style={{
+                    position: 'absolute', content: '""', height: '16px', width: '16px', left: '4px', bottom: '4px',
+                    backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                    transform: listenerEnabled ? 'translateX(16px)' : 'translateX(0)'
+                  }}></span>
+                </span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* User Info */}

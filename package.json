@@ -6,7 +6,9 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd client && npm run dev",
     "dev:server": "echo 'Backend runs in Electron now'",
-    "electron:dev": "electron ."
+    "electron:dev": "electron .",
+    "native:build": "cd native && node-gyp rebuild",
+    "native:clean": "cd native && node-gyp clean"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "jimp": "^0.22.10"
   },
   "dependencies": {
-    "better-sqlite3": "^12.11.1"
+    "better-sqlite3": "^12.11.1",
+    "node-addon-api": "^8.9.0"
   }
 }

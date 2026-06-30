@@ -4,7 +4,10 @@ const registerIpcHandlers = require('./ipcHandlers');
 const { createTray } = require('./tray');
 const autoLaunch = require('./autoLaunch');
 
+// Add this right under the require statements:
+app.setAppUserModelId("com.notifyiq.app");
 let mainWindow;
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -66,7 +69,11 @@ if (!gotTheLock) {
 
   app.on('before-quit', () => {
     app.isQuitting = true;
+    // IMPORTANT: Always restore Windows native banners when app fully exits!
+    const focusAssist = require('./services/focusAssist');
+    focusAssist.disableSync(); 
   });
+
 
   app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') app.quit();

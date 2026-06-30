@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Toast</title>
+  <link rel="stylesheet" href="./toast.css">
+</head>
+<body>
+  <div class="toast-container" id="toastContainer">
+    <div class="toast-header">
+      <div class="toast-icon" id="icon">🔔</div>
+      <div class="toast-title" id="title">New Notification</div>
+      <div class="toast-priority" id="priority">INFO</div>
+    </div>
+    <div class="toast-body" id="body">Loading details...</div>
+    <div class="toast-actions">
+      <button class="toast-action" id="btnDismiss">Dismiss</button>
+      <button class="toast-action" id="btnSnooze">Snooze</button>
+      <button class="toast-action primary" id="btnOpen">Open App</button>
+    </div>
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <script>
+    let notifId = null;
+    let autoDismissTimer = null;
+
+    // Receive data from the main process
+    window.toastAPI.onNotificationData((data) => {
+      notifId = data._id;
+      document.getElementById('icon').innerText = data.icon || '🔔';
+      document.getElementById('title').innerText = data.title;
+      document.getElementById('body').innerText = data.body;
+      
+      const priorityEl = document.getElementById('priority');
+      priorityEl.innerText = data.priority;
+      priorityEl.classList.add(data.priority);
+      
+      document.getElementById('progressBar').classList.add(data.priority);
+
+      // Start the auto-dismiss timer ONLY after data arrives
+      autoDismissTimer = setTimeout(() => { 
+        closeToast('ignored'); 
+      }, 7800); 
+    });
+
+    function closeToast(action) {
+      // CLEAR the timer so it doesn't double-fire if the user manually clicks a button!
+      if (autoDismissTimer) clearTimeout(autoDismissTimer);
+
+      document.getElementById('toastContainer').classList.add('fade-out');
+      
+      // Wait for 0.3s CSS fadeOut animation to finish, then send IPC message to destroy window
+      setTimeout(() => {
+        window.toastAPI.sendAction(notifId, action);
+      }, 300);
+    }
+
+    document.getElementById('btnDismiss').addEventListener('click', () => closeToast('dismissed'));
+    document.getElementById('btnSnooze').addEventListener('click', () => closeToast('snoozed'));
+    document.getElementById('btnOpen').addEventListener('click', () => closeToast('opened'));
+  </script>
+
+</body>
+</html>

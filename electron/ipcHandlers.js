@@ -19,7 +19,20 @@ function registerIpcHandlers() {
 
   // User Settings
   ipcMain.handle('user:getPreferences', () => UserRepo.getPreferences());
-  ipcMain.handle('user:updatePreferences', (_, prefs) => UserRepo.updatePreferences('user_001', prefs));
+  ipcMain.handle('user:updatePreferences', async (_, prefs) => {
+    UserRepo.updatePreferences('user_001', prefs);
+    
+    // Sync Focus Assist with OS if Focus Mode changes
+    if (prefs.focusMode) {
+      const focusAssist = require('./services/focusAssist');
+      if (prefs.focusMode === 'OPEN') {
+        await focusAssist.disable(); // Restore OS banners
+      } else {
+        await focusAssist.enable();  // Suppress OS banners (Work, Personal, DND)
+      }
+    }
+    return { success: true };
+  });
   
   // Auto Launch Settings
   const autoLaunch = require('./autoLaunch');
@@ -31,6 +44,34 @@ function registerIpcHandlers() {
     return { success: true };
   });
   
+    // Toast Actions (Behavior Tracking)
+  ipcMain.handle('toast:action', async (_, { id, action }) => {
+    const notif = NotificationRepo.getById(id);
+    if (!notif) return { success: false };
+
+    // 1. Log behavior to learn what apps the user ignores vs opens
+    BehaviorRepo.logAction({
+      userId: 'user_001',
+      notificationId: id,
+      sourceApp: notif.sourceApp,
+      category: notif.category,
+      originalPriority: notif.priority,
+      action: action
+    });
+
+    // 2. Mark as read or dismissed in the DB
+    if (action === 'dismissed' || action === 'opened') {
+      NotificationRepo.updateStatus(id, action === 'opened' ? 'read' : 'dismissed');
+    }
+
+    // 3. Destroy this specific toast window
+    const { BrowserWindow } = require('electron');
+    const toastWin = BrowserWindow.fromWebContents(_.sender);
+    if (toastWin) toastWin.close();
+
+    return { success: true };
+  });
+
   // Digest
   ipcMain.handle('digest:getLatest', () => DigestRepo.getLatest());
   ipcMain.handle('digest:generate', async () => {
@@ -83,6 +124,49 @@ function registerIpcHandlers() {
     const rawNotif = Simulator.generateOne();
     await processSimulation(rawNotif);
     return { success: true };
+  });
+  // --- NATIVE NOTIFICATION LISTENER (Phase 15) ---
+  const winListener = require('./services/winNotificationListener');
+  const notificationProcessor = require('./services/notificationProcessor');
+  const ClassificationEngine = require('../server/src/services/classificationEngine');
+  
+  // Initialize the store for the toggle state
+  const Store = require('electron-store');
+  const store = new Store();
+
+  ipcMain.handle('settings:getListenerStatus', () => {
+    return {
+      available: winListener.isAvailable(),
+      enabled: store.get('listenerEnabled', false)
+    };
+  });
+
+  ipcMain.handle('settings:setListenerEnabled', async (_, enabled) => {
+    store.set('listenerEnabled', enabled);
+    
+    if (enabled) {
+      const success = winListener.start(async (rawData) => {
+        const normalized = notificationProcessor.normalize(rawData);
+        
+        if (normalized) {
+            // Fetch latest rules for the user
+            const rules = RuleRepo.getAll('user_001');
+            
+            // Run through ML / Rules pipeline
+            const classification = await ClassificationEngine.classify(normalized, rules, 'user_001');
+            normalized.priority = classification.priority;
+            normalized.score = classification.score;
+            normalized.explanation = classification.explanation;
+            
+            // Deliver (shows Toast + updates DB + sends to React feed)
+            DeliveryManager.deliver(normalized);
+        }
+      });
+      return success;
+    } else {
+      winListener.stop();
+      return true;
+    }
   });
 }
 

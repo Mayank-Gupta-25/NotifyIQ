@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateUserPreferences: (prefs) => ipcRenderer.invoke('user:updatePreferences', prefs),
   getLaunchOnStartup: () => ipcRenderer.invoke('settings:getLaunchOnStartup'),
   setLaunchOnStartup: (enabled) => ipcRenderer.invoke('settings:setLaunchOnStartup', enabled),
+  getListenerStatus: () => ipcRenderer.invoke('settings:getListenerStatus'),
+  setListenerEnabled: (enabled) => ipcRenderer.invoke('settings:setListenerEnabled', enabled),
 
   // Digest
   getLatestDigest: () => ipcRenderer.invoke('digest:getLatest'),
